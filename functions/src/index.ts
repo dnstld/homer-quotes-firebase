@@ -41,7 +41,8 @@ export const getQuotes = onRequest(async (request, response) => {
       }
     }
 
-    response.status(200).json(quotes.sort());
+    const shuffledQuotes = quotes.sort(() => Math.random() - 0.5);
+    response.status(200).json(shuffledQuotes);
   } catch (error: unknown) {
     if (error instanceof Error) {
       response.status(500).json({ message: error.message });
