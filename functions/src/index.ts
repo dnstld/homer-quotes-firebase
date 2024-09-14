@@ -1,19 +1,52 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import { onRequest } from "firebase-functions/v2/https";
 
-import {onRequest} from "firebase-functions/v2/https";
-import * as logger from "firebase-functions/logger";
+import { readFile } from "fs/promises";
+import { join } from "path";
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
+const QUOTES_FILE_PATH = join(__dirname, "quotes.json");
 
-// export const helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+interface Quote {
+  id: number;
+  season: number;
+  episode: number;
+  time: string;
+  name: string;
+  quote: string;
+}
+
+const fetchQuotes = async (): Promise<Quote[]> => {
+  try {
+    const data = await readFile(QUOTES_FILE_PATH, "utf-8");
+    const quotes = JSON.parse(data) as Quote[];
+    return quotes;
+  } catch (error) {
+    console.error("Error reading quotes file:", error);
+    throw new Error("Unable to read quotes from file");
+  }
+};
+
+export const getQuotes = onRequest(async (request, response) => {
+  try {
+    const quotes = await fetchQuotes();
+    const { id } = request.query;
+
+    if (id) {
+      const quote = quotes.find((q) => q.id === parseInt(id as string, 10));
+      if (quote) {
+        response.status(200).json(quote);
+        return;
+      } else {
+        response.status(404).json({ message: "Quote not found" });
+        return;
+      }
+    }
+
+    response.status(200).json(quotes.sort());
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      response.status(500).json({ message: error.message });
+    } else {
+      response.status(500).json({ message: "An unknown error occurred" });
+    }
+  }
+});
