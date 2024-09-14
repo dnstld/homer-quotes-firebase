@@ -1,8 +1,4 @@
-import {
-  onRequest,
-  onCall,
-  CallableRequest,
-} from "firebase-functions/v2/https";
+import { onCall, CallableRequest } from "firebase-functions/v2/https";
 
 import { readFile } from "fs/promises";
 import { join } from "path";
@@ -29,35 +25,7 @@ const fetchQuotes = async (): Promise<Quote[]> => {
   }
 };
 
-export const getQuotes = onRequest(async (request, response) => {
-  try {
-    const quotes = await fetchQuotes();
-    const { id } = request.query;
-
-    if (id) {
-      const quote = quotes.find((q) => q.id === parseInt(id as string, 10));
-      if (quote) {
-        response.status(200).json(quote);
-        return;
-      } else {
-        response.status(404).json({ message: "Quote not found" });
-        return;
-      }
-    }
-
-    const shuffledQuotes = quotes.sort(() => Math.random() - 0.5);
-
-    response.status(200).json(shuffledQuotes);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      response.status(500).json({ message: error.message });
-    } else {
-      response.status(500).json({ message: "An unknown error occurred" });
-    }
-  }
-});
-
-export const getHomerQuotes = onCall(async (request: CallableRequest) => {
+export const getQuotes = onCall(async (request: CallableRequest) => {
   try {
     const quotes = await fetchQuotes();
     const { id } = request.data;
